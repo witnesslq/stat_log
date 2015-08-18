@@ -1,11 +1,18 @@
 package com.aicai.mrscript.mr.script;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Iterator;
 
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
@@ -17,8 +24,43 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
+import org.apache.hadoop.mapred.lib.db.DBConfiguration;
+import org.apache.hadoop.mapred.lib.db.DBOutputFormat;
+import org.apache.hadoop.mapred.lib.db.DBWritable;
 
 public class StatUV {
+	public static class BaseRecord implements Writable, DBWritable {
+		int id;
+		String name;
+
+		public BaseRecord() {
+
+		}
+
+		public void readFields(DataInput in) throws IOException {
+			this.id = in.readInt();
+			this.name = Text.readString(in);
+		}
+
+		public String toString() {
+			return new String(this.id + " " + this.name);
+		}
+
+		public void write(PreparedStatement stmt) throws SQLException {
+			stmt.setInt(1, this.id);
+			stmt.setString(2, this.name);
+		}
+
+		public void readFields(ResultSet result) throws SQLException {
+			this.id = result.getInt(1);
+			this.name = result.getString(2);
+		}
+
+		public void write(DataOutput out) throws IOException {
+			out.writeInt(this.id);
+			Text.writeString(out, this.name);
+		}
+	}
 
 	public static class StatUVMapper1 extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
 		private Text word = new Text();
@@ -27,6 +69,7 @@ public class StatUV {
 		public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
 				throws IOException {
 			StatKey Stat = StatKey.filterUV(value.toString());
+
 			if (Stat.isValid()) {
 				word.set(Stat.getChannel() + ":" + Stat.getUid());
 				output.collect(word, uid);
@@ -60,24 +103,28 @@ public class StatUV {
 		}
 	}
 
-	public static class StatUVReducer extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
+	public static class StatUVReducer extends MapReduceBase implements Reducer<Text, IntWritable, BaseRecord, Text> {
 		private IntWritable result = new IntWritable();
 
-		public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, IntWritable> output,
+		public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<BaseRecord, Text> output,
 				Reporter reporter) throws IOException {
 			int sum = 0;
 			while (values.hasNext()) {
 				sum += values.next().get();
 			}
 			result.set(sum);
-			output.collect(key, result);
+			BaseRecord record = new BaseRecord();
+			record.id = Integer.parseInt(result.toString());
+			record.name = key.toString();
+			output.collect(record, key);
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
-		String input = "hdfs://localhost:9000/user/hdfs/log_stat3";
-		String output = "hdfs://localhost:9000/user/hdfs/log_Stat3/uv";
-		String output2 = "hdfs://localhost:9000/user/hdfs/log_Stat3/uv3";
+		String input = "hdfs://localhost:9000/user/hdfs/log_stat4";
+		String output = "hdfs://localhost:9000/user/hdfs/log_Stat4/uv";
+		// String output2 = "hdfs://localhost:9000/user/hdfs/log_Stat4/uv4";
 		JobConf conf = new JobConf(StatUV.class);
 
 		// 第一个job的配置
@@ -99,21 +146,25 @@ public class StatUV {
 		// ======================
 		JobConf conf2 = new JobConf(StatUV.class);
 		conf2.setJobName("StatUV2");
+		DistributedCache.addFileToClassPath(new Path("/hdfsPath/mysql-connector-java-5.1.30.jar"), conf2);
+
 		// 第二个作业的配置
 		conf2.setMapOutputKeyClass(Text.class);
 		conf2.setMapOutputValueClass(IntWritable.class);
-		conf2.setOutputKeyClass(Text.class);
-		conf2.setOutputValueClass(IntWritable.class);
+		conf2.setOutputKeyClass(BaseRecord.class);
+		conf2.setOutputValueClass(Text.class);
 		conf2.setMapperClass(StatUVMapper.class);
-		conf2.setCombinerClass(StatUVReducer.class);
+		// conf2.setCombinerClass(StatUVReducer.class);
 		conf2.setReducerClass(StatUVReducer.class);
 
 		conf2.setInputFormat(TextInputFormat.class);
-		conf2.setOutputFormat(TextOutputFormat.class);
-
+		conf2.setOutputFormat(DBOutputFormat.class);
+		DBConfiguration.configureDB(conf2, "com.mysql.jdbc.Driver", "jdbc:mysql://192.168.5.40:3306/test1", "root",
+				"123456");
+		// String[] fields = { "id", "name" };
 		FileInputFormat.setInputPaths(conf2, new Path(output));
-		FileOutputFormat.setOutputPath(conf2, new Path(output2));
-
+		// FileOutputFormat.setOutputPath(conf2, new Path(output2));
+		DBOutputFormat.setOutput(conf2, "t", "id", "name");
 		JobClient.runJob(conf2);
 		System.exit(0);
 	}
