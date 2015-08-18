@@ -128,8 +128,8 @@ public class StatUV {
 
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
-		String input = "hdfs://localhost:9000/user/hdfs/log_stat4";
-		String output = "hdfs://localhost:9000/user/hdfs/log_Stat4/uv";
+		String input = "hdfs://localhost:9000/user/hdfs/log_stat3";
+		String output = "hdfs://localhost:9000/user/hdfs/log_stat3/uv" + System.currentTimeMillis();
 		JobConf conf = new JobConf(StatUV.class);
 
 		// 第一个job的配置
