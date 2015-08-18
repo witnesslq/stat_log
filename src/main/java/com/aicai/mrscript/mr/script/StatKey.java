@@ -24,6 +24,7 @@ public class StatKey {
 	private String cookie;// 记录Cookie
 	private boolean valid = true;// 判断数据是否合法
 	private String channel;
+	private String cookieChannel;
 
 	// 194.237.142.21 - - [18/Sep/2013:06:49:18 +0000] "GET
 	// /wp-content/uploads/2013/07/rstudio-git3.png HTTP/1.1" 304 0 "-"
@@ -34,6 +35,14 @@ public class StatKey {
 	// __utmb=224849432.13.10.1354625898; __utmc=224849432;
 	// __utmz=224849432.1354108162.783.24.utmcsr=e.weibo.com|utmccn=(referral)|utmcmd=referral|utmcct=/2036070420/z7ixpvGv4;
 	// sess=50b8f.796"
+
+	public String getCookieChannel() {
+		return cookieChannel;
+	}
+
+	public void setCookieChannel(String cookieChannel) {
+		this.cookieChannel = cookieChannel;
+	}
 
 	public String getChannel() {
 		return channel;
@@ -67,14 +76,22 @@ public class StatKey {
 			}
 
 			String[] arr2 = line.split("\"");
-			Stat.setUid(arr2[7]);
+
 			String str = "unknown";
 			if (Stat.getRequest().contains("c=")) {
 				int indexOf = line.indexOf("c=");
 				str = line.substring(indexOf + 2, indexOf + 5);
 			}
 			Stat.setChannel(str);
-			Stat.setCookie(arr2[9]);
+			if (arr2 != null && arr2.length > 7) {
+				Stat.setUid(arr2[7]);
+				String ctr = arr2[9];
+				Stat.setCookie(ctr);
+				int indexOf = ctr.indexOf("c=");
+				String cookiestr = ctr.substring(indexOf + 2, indexOf + 5);
+				Stat.setCookieChannel(cookiestr);
+			}
+
 		} else {
 			Stat.setValid(false);
 		}
@@ -282,7 +299,7 @@ public class StatKey {
 		// \"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko)
 		// Chrome/29.0.1547.66 Safari/537.36\"";
 		// System.out.println(line);
-		String line = "192.168.5.161 - - [07/Aug/2015:09:31:22 +0800] \"GET /common/getTopList?c=b12&cateid=20000000 HTTP/1.1\" 200 1591 \"http://dev.aixuedai.com:10430/\" \"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.130 Safari/537.36\" - \"1030000000091320\" \"__c_uactiveat=1350108823468; __c_review=46; __c_last=1351061042906; __c_visitor=1350104003730701; uid=103; __utma=224849432.425128387.1339588739.1354606821.1354625898.809; __utmb=224849432.13.10.1354625898; __utmc=224849432; __utmz=224849432.1354108162.783.24.utmcsr=e.weibo.com|utmccn=(referral)|utmcmd=referral|utmcct=/2036070420/z7ixpvGv4; sess=50b8f.796\"";
+		String line = "192.168.5.161 - - [07/Aug/2015:09:31:22 +0800] \"GET /common/getTopList?c=b12&cateid=20000000 HTTP/1.1\" 200 1591 \"http://dev.aixuedai.com:10430/\" \"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.130 Safari/537.36\" - \"1030000000091320\" \"c=b15; __c_uactiveat=1350108823468; __c_review=46; __c_last=1351061042906; __c_visitor=1350104003730701; uid=103; __utma=224849432.425128387.1339588739.1354606821.1354625898.809; __utmb=224849432.13.10.1354625898; __utmc=224849432; __utmz=224849432.1354108162.783.24.utmcsr=e.weibo.com|utmccn=(referral)|utmcmd=referral|utmcct=/2036070420/z7ixpvGv4; sess=50b8f.796\"";
 		// String line = "222.68.172.190 - - [18/Sep/2013:06:49:57 +0000] \"GET
 		// /images/my.jpg HTTP/1.1\" 200 19939 \"http://www.angularjs.cn/A00n\"
 		// \"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko)
@@ -310,6 +327,11 @@ public class StatKey {
 		String[] arr2 = line.split("\"");
 		Stat.setUid(arr2[7]);
 		Stat.setCookie(arr2[9]);
+
+		String str = arr2[9];
+		int indexOf = str.indexOf("c=");
+		String cookiestr = str.substring(indexOf + 2, indexOf + 5);
+		System.out.println("cookie channel is " + cookiestr);
 		System.out.println(Stat);
 		System.out.println("-----------------------------------------------");
 		try {
