@@ -289,6 +289,13 @@ public class StatKey {
 		return valid;
 	}
 
+	public boolean isregesterUrl() {
+		return false;
+	}
+
+	public boolean isDealUrl() {
+		return false;
+	}
 	public void setValid(boolean valid) {
 		this.valid = valid;
 	}

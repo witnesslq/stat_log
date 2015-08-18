@@ -25,17 +25,44 @@ import org.apache.hadoop.mapred.TextOutputFormat;
  */
 public class StatDealUser {
 
+	public static class StatDealUserMapper1 extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
+		private Text word = new Text();
+		private Text uid = new Text();
+
+		public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			StatKey Stat = StatKey.filterUV(value.toString());
+			// 判断请求是否异常且是交易接口
+			if (Stat.isValid() && Stat.isDealUrl()) {
+				word.set(Stat.getCookieChannel() + ":" + Stat.getUid());
+				output.collect(word, uid);
+				// b12 {1,2,3,4,5,6,7,8,1}
+			}
+		}
+	}
+
+	public static class StatDealUserReducer1 extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+		private Text result = new Text();
+
+		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			output.collect(key, result);
+		}
+	}
+
 	public static class StatDealUserMapper extends MapReduceBase implements Mapper<Object, Text, Text, IntWritable> {
 		private IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
 		public void map(Object key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			StatKey Stat = StatKey.filterBroswer(value.toString());
-			if (Stat.isValid()) {
-				word.set(Stat.getHttp_user_agent());
+			String val = value.toString();
+			String[] arr = val.split(":");
+			if (arr[0] != "" && arr[0] != null) {
+				word.set(arr[0]);
 				output.collect(word, one);
 			}
+			// b12 {1,2,3,4,5,6,7,8,1}
 		}
 	}
 
@@ -55,29 +82,46 @@ public class StatDealUser {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String input = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat";
-		String output = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/browser";
-
+		String input = "hdfs://localhost:9000/user/hdfs/log_stat3";
+		String output = "hdfs://localhost:9000/user/hdfs/log_Stat3/uv";
+		String output2 = "hdfs://localhost:9000/user/hdfs/log_Stat3/uv3";
 		JobConf conf = new JobConf(StatDealUser.class);
-		conf.setJobName("StatDealUser");
-		conf.addResource("classpath:/hadoop/core-site.xml");
-		conf.addResource("classpath:/hadoop/hdfs-site.xml");
-		conf.addResource("classpath:/hadoop/mapred-site.xml");
+
+		// 第一个job的配置
+		conf.setMapOutputKeyClass(Text.class);
+		conf.setMapOutputValueClass(Text.class);
 
 		conf.setOutputKeyClass(Text.class);
-		conf.setOutputValueClass(IntWritable.class);
+		conf.setOutputValueClass(Text.class);
 
-		conf.setMapperClass(StatDealUserMapper.class);
-		conf.setCombinerClass(StatDealUserReducer.class);
-		conf.setReducerClass(StatDealUserReducer.class);
+		conf.setMapperClass(StatDealUserMapper1.class);
+		conf.setCombinerClass(StatDealUserReducer1.class);
+		conf.setReducerClass(StatDealUserReducer1.class);
 
 		conf.setInputFormat(TextInputFormat.class);
 		conf.setOutputFormat(TextOutputFormat.class);
-
 		FileInputFormat.setInputPaths(conf, new Path(input));
 		FileOutputFormat.setOutputPath(conf, new Path(output));
-
 		JobClient.runJob(conf);
+		// ======================
+		JobConf conf2 = new JobConf(StatDealUser.class);
+		conf2.setJobName("StatDealUser2");
+		// 第二个作业的配置
+		conf2.setMapOutputKeyClass(Text.class);
+		conf2.setMapOutputValueClass(IntWritable.class);
+		conf2.setOutputKeyClass(Text.class);
+		conf2.setOutputValueClass(IntWritable.class);
+		conf2.setMapperClass(StatDealUserMapper.class);
+		conf2.setCombinerClass(StatDealUserReducer.class);
+		conf2.setReducerClass(StatDealUserReducer.class);
+
+		conf2.setInputFormat(TextInputFormat.class);
+		conf2.setOutputFormat(TextOutputFormat.class);
+
+		FileInputFormat.setInputPaths(conf2, new Path(output));
+		FileOutputFormat.setOutputPath(conf2, new Path(output2));
+
+		JobClient.runJob(conf2);
 		System.exit(0);
 	}
 
