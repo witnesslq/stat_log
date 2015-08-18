@@ -29,6 +29,12 @@ import org.apache.hadoop.mapred.lib.db.DBOutputFormat;
 import org.apache.hadoop.mapred.lib.db.DBWritable;
 
 public class StatUV {
+	/**
+	 * mysql
+	 * 
+	 * @author Young
+	 *
+	 */
 	public static class BaseRecord implements Writable, DBWritable {
 		int id;
 		String name;
@@ -124,7 +130,6 @@ public class StatUV {
 	public static void main(String[] args) throws Exception {
 		String input = "hdfs://localhost:9000/user/hdfs/log_stat4";
 		String output = "hdfs://localhost:9000/user/hdfs/log_Stat4/uv";
-		// String output2 = "hdfs://localhost:9000/user/hdfs/log_Stat4/uv4";
 		JobConf conf = new JobConf(StatUV.class);
 
 		// 第一个job的配置
@@ -148,22 +153,21 @@ public class StatUV {
 		conf2.setJobName("StatUV2");
 		DistributedCache.addFileToClassPath(new Path("/hdfsPath/mysql-connector-java-5.1.30.jar"), conf2);
 
-		// 第二个作业的配置
+		// 第一个去重复， 第二个作业统计信息
 		conf2.setMapOutputKeyClass(Text.class);
 		conf2.setMapOutputValueClass(IntWritable.class);
 		conf2.setOutputKeyClass(BaseRecord.class);
 		conf2.setOutputValueClass(Text.class);
 		conf2.setMapperClass(StatUVMapper.class);
+		// 不需要捆绑Combiner
 		// conf2.setCombinerClass(StatUVReducer.class);
 		conf2.setReducerClass(StatUVReducer.class);
 
 		conf2.setInputFormat(TextInputFormat.class);
 		conf2.setOutputFormat(DBOutputFormat.class);
-		DBConfiguration.configureDB(conf2, "com.mysql.jdbc.Driver", "jdbc:mysql://192.168.5.40:3306/test1", "root",
+		DBConfiguration.configureDB(conf2, "com.mysql.jdbc.Driver", "jdbc:mysql://192.168.0.122:3306/test1", "root",
 				"123456");
-		// String[] fields = { "id", "name" };
 		FileInputFormat.setInputPaths(conf2, new Path(output));
-		// FileOutputFormat.setOutputPath(conf2, new Path(output2));
 		DBOutputFormat.setOutput(conf2, "t", "id", "name");
 		JobClient.runJob(conf2);
 		System.exit(0);
