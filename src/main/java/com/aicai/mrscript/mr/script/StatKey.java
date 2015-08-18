@@ -293,9 +293,14 @@ public class StatKey {
 		return false;
 	}
 
+	public boolean isAuthenticateUrl() {
+		return false;
+	}
+
 	public boolean isDealUrl() {
 		return false;
 	}
+
 	public void setValid(boolean valid) {
 		this.valid = valid;
 	}
