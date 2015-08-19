@@ -21,61 +21,63 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 
 public class StatIP {
 
-    public static class StatIPMapper extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
-        private Text word = new Text();
-        private Text ips = new Text();
+	public static class StatIPMapper extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
+		private Text word = new Text();
+		private Text ips = new Text();
 
-        public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-            StatKey Stat = StatKey.filterIPs(value.toString());
-            if (Stat.isValid()) {
-                word.set(Stat.getRequest());
-                ips.set(Stat.getRemote_addr());
-                output.collect(word, ips);
-            }
-        }
-    }
+		public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			StatKey Stat = StatKey.filterIPs(value.toString());
+			if (Stat.isValid()) {
+				word.set(Stat.getRequest());
+				ips.set(Stat.getRemote_addr());
+				output.collect(word, ips);
+			}
+		}
+	}
 
-    public static class StatIPReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
-        private Text result = new Text();
-        private Set<String> count = new HashSet<String>();
+	public static class StatIPReducer extends MapReduceBase implements Reducer<Text, Text, Text, Text> {
+		private Text result = new Text();
+		private Set<String> count = new HashSet<String>();
 
-        public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
-            while (values.hasNext()) {
-                count.add(values.next().toString());
-            }
-            result.set(String.valueOf(count.size()));
-            output.collect(key, result);
-        }
-    }
+		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter)
+				throws IOException {
+			while (values.hasNext()) {
+				count.add(values.next().toString());
+			}
+			result.set(String.valueOf(count.size()));
+			output.collect(key, result);
+		}
+	}
 
-    public static void main(String[] args) throws Exception {
-        String input = "hdfs://localhost:9000/user/hdfs/log_Stat/";
-        String output = "hdfs://localhost:9000/user/hdfs/log_Stat/ip";
+	public static void main(String[] args) throws Exception {
+		String input = "hdfs://localhost:9000/user/hdfs/log_Stat/";
+		String output = "hdfs://localhost:9000/user/hdfs/log_Stat/ip";
 
-        JobConf conf = new JobConf(StatIP.class);
-        conf.setJobName("StatIP");
-        conf.addResource("classpath:/hadoop/core-site.xml");
-        conf.addResource("classpath:/hadoop/hdfs-site.xml");
-        conf.addResource("classpath:/hadoop/mapred-site.xml");
-        
-        conf.setMapOutputKeyClass(Text.class);
-        conf.setMapOutputValueClass(Text.class);
-        
-        conf.setOutputKeyClass(Text.class);
-        conf.setOutputValueClass(Text.class);
-        
-        conf.setMapperClass(StatIPMapper.class);
-        conf.setCombinerClass(StatIPReducer.class);
-        conf.setReducerClass(StatIPReducer.class);
+		JobConf conf = new JobConf(StatIP.class);
+		conf.setJobName("StatIP");
+		conf.addResource("classpath:/hadoop/core-site.xml");
+		conf.addResource("classpath:/hadoop/hdfs-site.xml");
+		conf.addResource("classpath:/hadoop/mapred-site.xml");
 
-        conf.setInputFormat(TextInputFormat.class);
-        conf.setOutputFormat(TextOutputFormat.class);
+		conf.setMapOutputKeyClass(Text.class);
+		conf.setMapOutputValueClass(Text.class);
 
-        FileInputFormat.setInputPaths(conf, new Path(input));
-        FileOutputFormat.setOutputPath(conf, new Path(output));
+		conf.setOutputKeyClass(Text.class);
+		conf.setOutputValueClass(Text.class);
 
-        JobClient.runJob(conf);
-        System.exit(0);
-    }
+		conf.setMapperClass(StatIPMapper.class);
+		conf.setCombinerClass(StatIPReducer.class);
+		conf.setReducerClass(StatIPReducer.class);
+
+		conf.setInputFormat(TextInputFormat.class);
+		conf.setOutputFormat(TextOutputFormat.class);
+
+		FileInputFormat.setInputPaths(conf, new Path(input));
+		FileOutputFormat.setOutputPath(conf, new Path(output));
+
+		JobClient.runJob(conf);
+		System.exit(0);
+	}
 
 }

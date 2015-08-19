@@ -129,9 +129,10 @@ public class StatUV {
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
 		String input = "hdfs://localhost:9000/user/hdfs/log_stat";
-		String output = "hdfs://localhost:9000/user/hdfs/log_stat/uv" + System.currentTimeMillis()+""+System.nanoTime();
+		String output = "hdfs://localhost:9000/user/hdfs/log_stat/uv";
+		OperateHDFS op = new OperateHDFS();
+		op.DeleteHDFSFile(output);
 		JobConf conf = new JobConf(StatUV.class);
-
 		// 第一个job的配置
 		conf.setMapOutputKeyClass(Text.class);
 		conf.setMapOutputValueClass(Text.class);
@@ -148,7 +149,7 @@ public class StatUV {
 		FileInputFormat.setInputPaths(conf, new Path(input));
 		FileOutputFormat.setOutputPath(conf, new Path(output));
 		JobClient.runJob(conf);
-		// ======================
+		// ===========================================================
 		JobConf conf2 = new JobConf(StatUV.class);
 		conf2.setJobName("StatUV2");
 		DistributedCache.addFileToClassPath(new Path("/hdfsPath/mysql-connector-java-5.1.30.jar"), conf2);
