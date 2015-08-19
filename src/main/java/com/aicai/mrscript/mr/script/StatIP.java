@@ -49,8 +49,8 @@ public class StatIP {
     }
 
     public static void main(String[] args) throws Exception {
-        String input = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/";
-        String output = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/ip";
+        String input = "hdfs://localhost:9000/user/hdfs/log_Stat/";
+        String output = "hdfs://localhost:9000/user/hdfs/log_Stat/ip";
 
         JobConf conf = new JobConf(StatIP.class);
         conf.setJobName("StatIP");

@@ -47,8 +47,8 @@ public class StatPV {
     }
 
     public static void main(String[] args) throws Exception {
-        String input = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/";
-        String output = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/pv";
+        String input = "hdfs://localhost:9000/user/hdfs/log_Stat/";
+        String output = "hdfs://localhost:9000/user/hdfs/log_Stat/pv";
 
         JobConf conf = new JobConf(StatPV.class);
         conf.setJobName("StatPV");

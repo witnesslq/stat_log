@@ -52,8 +52,8 @@ public class StatTime {
     }
 
     public static void main(String[] args) throws Exception {
-        String input = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat";
-        String output = "hdfs://192.168.1.210:9000/user/hdfs/log_Stat/time";
+        String input = "hdfs://localhost:9000/user/hdfs/log_Stat";
+        String output = "hdfs://localhost:9000/user/hdfs/log_Stat/time";
 
         JobConf conf = new JobConf(StatTime.class);
         conf.setJobName("StatTime");
